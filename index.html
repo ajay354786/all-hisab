@@ -151,10 +151,14 @@
         <header>
             <div><i class="fas fa-cloud"></i> ALL HISAB PRO</div>
             <div class="header-actions">
+                
+                <!-- NEW BUTTON: DAILY TRACKER JANE KE LIYE -->
+                <button class="btn-header" style="background: var(--warning); color: #000;" onclick="window.location.href='daily_tracker.html'" title="Daily Tracker"><i class="fas fa-chart-line"></i> Daily Hisab</button>
+
                 <!-- FULL BACKUP BUTTON -->
                 <button class="btn-header" onclick="exportData()" title="Backup to PC"><i class="fas fa-download"></i></button>
                 
-                <!-- FULL RESTORE BUTTON (ADDED BACK) -->
+                <!-- FULL RESTORE BUTTON -->
                 <button class="btn-header" onclick="document.getElementById('importFile').click()" title="Full Restore"><i class="fas fa-upload"></i></button>
                 <input type="file" id="importFile" style="display:none;" accept=".json" onchange="importData(event)">
                 
