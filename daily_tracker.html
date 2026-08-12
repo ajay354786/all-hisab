@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Daily Earning & Expense Tracker</title>
+    <title>Daily Earning & Expense Tracker - Cloud</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- FIREBASE CLOUD DATABASE LINKS -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         :root {
             --primary: #4338ca; --primary-light: #e0e7ff;
@@ -17,8 +22,10 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 30px; }
 
-        header { background: linear-gradient(135deg, var(--primary), #3730a3); color: white; padding: 15px 20px; text-align: center; font-size: 20px; font-weight: 700; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        
+        header { background: linear-gradient(135deg, var(--primary), #3730a3); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: 700; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-back { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .btn-back:active { transform: scale(0.95); }
+
         .container { max-width: 900px; margin: 0 auto; padding: 15px; }
 
         /* Summary Cards */
@@ -70,23 +77,22 @@
         th { color: var(--text-muted); }
         .del-btn { color: var(--danger); background: none; border: none; cursor: pointer; padding: 5px; }
 
+        /* Main Loader */
+        #loader { display: flex; justify-content: center; padding: 50px; color: var(--primary); font-weight: bold; }
+        #app-content { display: none; }
     </style>
 </head>
 <body>
 
-    <header style="display: flex; justify-content: space-between; align-items: center;">
-        <!-- BACK BUTTON: ALL HISAB PAR WAPAS JANE KE LIYE -->
-        <button onclick="window.location.href='index.html'" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
-        
-        <div><i class="fas fa-chart-line"></i> Daily Hisab Tracker</div>
-        
-        <!-- UI Balance karne ke liye khali div -->
-        <div style="width: 60px;"></div> 
+    <header>
+        <button class="btn-back" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Back</button>
+        <div><i class="fas fa-chart-line"></i> Daily Hisab</div>
+        <div style="width: 70px;"></div> <!-- UI Balance -->
     </header>
 
-    <div class="container">
+    <div id="loader">Syncing from Cloud... Please wait</div>
+
+    <div id="app-content" class="container">
         <!-- Date Filters -->
         <div class="filter-section">
             <div class="filter-buttons">
@@ -151,41 +157,84 @@
     </div>
 
     <script>
-        // --- DATABASE INITIALIZATION ---
-        let db = JSON.parse(localStorage.getItem('daily_tracker_db')) || {
-            categories: {
-                income: ['AEPS Commission', 'Gold Loan Byaj', 'Emitra Form', 'Money Transfer'],
-                expense: ['Chai / Snacks', 'Shop Rent', 'Electricity Bill', 'Stationery']
-            },
+        // --- SECURITY CHECK ---
+        if(localStorage.getItem('all_hisab_auth') !== 'secure') {
+            alert("Please login from the Main App first!");
+            window.location.href = 'index.html';
+        }
+
+        // --- FIREBASE CLOUD SETUP ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyC0hd47zuyx8JbtFRxEB25Cj-CfZSFSSBU",
+            authDomain: "allhisab-1dbb2.firebaseapp.com",
+            databaseURL: "https://allhisab-1dbb2-default-rtdb.asia-southeast1.firebasedatabase.app", 
+            projectId: "allhisab-1dbb2",
+            storageBucket: "allhisab-1dbb2.firebasestorage.app",
+            messagingSenderId: "724063175679",
+            appId: "1:724063175679:web:80920672497e37d366ddca",
+            measurementId: "G-WZ8MPL1ZN0"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let db = {
+            categories: { income: [], expense: [] },
             transactions: []
         };
 
         let currentTab = 'income';
         let currentFilter = 'today'; 
 
+        // --- FETCH DATA FROM CLOUD ---
+        function loadDataFromFirebase() {
+            database.ref('dailyTrackerData').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    db = data;
+                } else {
+                    // Default values if cloud is empty
+                    db = {
+                        categories: {
+                            income: ['AEPS Commission', 'Gold Loan Byaj', 'Emitra Form', 'Money Transfer'],
+                            expense: ['Chai / Snacks', 'Shop Rent', 'Electricity Bill', 'Stationery']
+                        },
+                        transactions: []
+                    };
+                }
+                
+                // Ensure arrays exist
+                if (!db.transactions) db.transactions = [];
+                if (!db.categories) db.categories = { income: [], expense: [] };
+                if (!db.categories.income) db.categories.income = [];
+                if (!db.categories.expense) db.categories.expense = [];
+
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+
+                renderCategories();
+                renderHistoryAndTotals();
+            }, (error) => {
+                alert("Database Connection Error: " + error.message);
+            });
+        }
+
+        // --- SAVE TO CLOUD ---
         function saveData() {
-            localStorage.setItem('daily_tracker_db', JSON.stringify(db));
+            database.ref('dailyTrackerData').set(db).catch((error) => {
+                alert("Cloud Sync Error! " + error.message);
+            });
         }
 
         // --- FILTER & DATE LOGIC ---
         function getTodayDate() { return new Date().toISOString().split('T')[0]; }
-        
-        function getYesterdayDate() {
-            let d = new Date(); d.setDate(d.getDate() - 1);
-            return d.toISOString().split('T')[0];
-        }
+        function getYesterdayDate() { let d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; }
+        function getMonthString() { return new Date().toISOString().slice(0, 7); }
 
-        function getMonthString() {
-            return new Date().toISOString().slice(0, 7); // YYYY-MM
-        }
-
-        // Initialize Date Picker
         document.getElementById('filterDate').value = getTodayDate();
 
         function setFilter(type, btnElement) {
             currentFilter = type;
-            
-            // UI Update for buttons
             if(btnElement) {
                 document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
                 btnElement.classList.add('active');
@@ -193,7 +242,6 @@
                 document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
             }
 
-            // Set Date input based on filter
             if(type === 'today') document.getElementById('filterDate').value = getTodayDate();
             if(type === 'yesterday') document.getElementById('filterDate').value = getYesterdayDate();
             
@@ -216,14 +264,11 @@
         function renderCategories() {
             const container = document.getElementById('categoryList');
             container.innerHTML = '';
-            
             const cats = db.categories[currentTab];
             const rowClass = currentTab === 'income' ? '' : 'expense-row';
 
             cats.forEach((cat, index) => {
-                // Generate a safe ID for inputs
-                const safeId = cat.replace(/\s+/g, '') + index;
-                
+                const safeId = "cat_" + index;
                 container.innerHTML += `
                     <div class="cat-row ${rowClass}">
                         <div class="cat-header">
@@ -234,9 +279,9 @@
                             </div>
                         </div>
                         <div class="cat-inputs">
-                            <input type="number" id="amt_${safeId}" placeholder="Amount (₹)" onkeypress="handleEnter(event, '${safeId}', '${cat}')">
-                            <input type="text" id="note_${safeId}" placeholder="Note (Optional)" onkeypress="handleEnter(event, '${safeId}', '${cat}')">
-                            <button class="btn-save-entry" onclick="saveEntry('${safeId}', '${cat}')"><i class="fas fa-paper-plane"></i></button>
+                            <input type="number" id="amt_${safeId}" placeholder="Amount (₹)" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
+                            <input type="text" id="note_${safeId}" placeholder="Note (Optional)" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
+                            <button class="btn-save-entry" onclick="saveEntry('${safeId}', '${cat.replace(/'/g, "\\'")}')"><i class="fas fa-paper-plane"></i></button>
                         </div>
                     </div>
                 `;
@@ -247,7 +292,7 @@
             let catName = prompt(`Enter new ${currentTab === 'income' ? 'Earning' : 'Expense'} category name:`);
             if(catName && catName.trim() !== '') {
                 db.categories[currentTab].push(catName.trim());
-                saveData(); renderCategories();
+                saveData(); 
             }
         }
 
@@ -255,10 +300,7 @@
             let oldName = db.categories[currentTab][index];
             let newName = prompt("Rename category:", oldName);
             if(newName && newName.trim() !== '' && newName !== oldName) {
-                // Update category name
                 db.categories[currentTab][index] = newName.trim();
-                
-                // Optional: Update old transactions to new category name
                 if(confirm("Do you want to update all old entries to this new name too?")) {
                     db.transactions.forEach(t => {
                         if(t.type === currentTab && t.category === oldName) {
@@ -266,14 +308,14 @@
                         }
                     });
                 }
-                saveData(); renderCategories(); renderHistoryAndTotals();
+                saveData(); 
             }
         }
 
         function deleteCategory(index) {
-            if(confirm("Delete this category? (Old saved entries will not be deleted)")) {
+            if(confirm("Delete this category? (Old saved entries will not be deleted from Cloud)")) {
                 db.categories[currentTab].splice(index, 1);
-                saveData(); renderCategories();
+                saveData(); 
             }
         }
 
@@ -290,7 +332,6 @@
             
             const amount = parseInt(amtInput.value);
             const note = noteInput.value.trim();
-            // Entry humesha Date Picker me selected date ke hisaab se save hogi
             const date = document.getElementById('filterDate').value; 
 
             if(!date) return alert("Please select a date in the top filter!");
@@ -305,22 +346,17 @@
                 note: note
             };
 
-            db.transactions.unshift(newEntry); // Nayi entry sabse upar
-            saveData();
+            db.transactions.unshift(newEntry);
+            saveData(); // Sends to cloud
 
-            // Clear inputs and show success effect
-            amtInput.value = '';
-            noteInput.value = '';
-            amtInput.focus(); // Keep focus for fast entry
-
-            renderHistoryAndTotals();
+            amtInput.value = ''; noteInput.value = '';
+            amtInput.focus();
         }
 
-        // --- HISTORY & TOTALS LOGIC ---
         function deleteTransaction(id) {
-            if(confirm("Are you sure you want to delete this entry?")) {
+            if(confirm("Are you sure you want to delete this entry from Cloud?")) {
                 db.transactions = db.transactions.filter(t => t.id !== id);
-                saveData(); renderHistoryAndTotals();
+                saveData(); 
             }
         }
 
@@ -336,22 +372,17 @@
             let filterDate = document.getElementById('filterDate').value;
             let monthStr = getMonthString();
 
-            let totalInc = 0;
-            let totalExp = 0;
-
+            let totalInc = 0; let totalExp = 0;
             let displayData = [];
 
-            // Filter Logic
             if(currentFilter === 'month') {
                 displayData = db.transactions.filter(t => t.date.startsWith(monthStr));
                 document.getElementById('historyTitle').innerText = `Entries for This Month`;
             } else {
-                // Today, Yesterday, or Custom specific date
                 displayData = db.transactions.filter(t => t.date === filterDate);
                 document.getElementById('historyTitle').innerText = `Entries for ${formatDate(filterDate)}`;
             }
 
-            // Sorting by newest first
             displayData.sort((a,b) => b.id - a.id);
 
             displayData.forEach(t => {
@@ -378,18 +409,24 @@
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No entries found for this period.</td></tr>`;
             }
 
-            // Update Summary Cards
             document.getElementById('sumIncome').innerText = `₹${totalInc.toLocaleString('en-IN')}`;
             document.getElementById('sumExpense').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
-            
             let balance = totalInc - totalExp;
             document.getElementById('sumBalance').innerText = `₹${balance.toLocaleString('en-IN')}`;
             document.getElementById('sumBalance').className = `amt ${balance >= 0 ? 'text-primary' : 'text-danger'}`;
         }
 
-        // Init App
-        switchTab('income');
-        setFilter('today', document.querySelector('.btn-filter.active'));
+        // Initialize Firebase on load
+        window.onload = () => {
+            if(localStorage.getItem('all_hisab_auth') === 'secure') {
+                loadDataFromFirebase();
+            } else {
+                alert("Please login from the Main App first!");
+                window.location.href = 'index.html';
+            }
+            switchTab('income');
+            setFilter('today', document.querySelector('.btn-filter.active'));
+        };
 
     </script>
 </body>
