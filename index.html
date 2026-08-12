@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>All Hisab - Ultimate Business Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4338ca; --primary-light: #e0e7ff;
+            --bg-color: #f1f5f9; --card-bg: #ffffff;
+            --text-main: #1e293b; --text-muted: #64748b;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 30px; }
+
+        header { background: linear-gradient(135deg, var(--primary), #3730a3); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 700; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header-actions { display: flex; gap: 10px; }
+        .btn-header { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .btn-header:hover { background: rgba(255,255,255,0.3); }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 20px 15px; }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex: 1; min-width: 110px; padding: 12px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text-muted); font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(67, 56, 202, 0.2); }
+
+        .action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-add { background: var(--success); color: white; }
+        .btn-total { background: var(--warning); color: white; flex-direction: column; align-items: center; line-height: 1.2; text-align: center; }
+        
+        .search-container { grid-column: span 2; display: flex; background: var(--card-bg); border-radius: 10px; padding: 0 15px; align-items: center; border: 1px solid var(--border); }
+        .search-container input { border: none; outline: none; width: 100%; padding: 12px 10px; font-size: 14px; background: transparent; }
+
+        .list-container { display: flex; flex-direction: column; gap: 10px; }
+        .list-item { background: var(--card-bg); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .list-item-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .customer-info { display: flex; align-items: flex-start; gap: 12px; flex-grow: 1; }
+        .serial { background: var(--primary-light); color: var(--primary); font-weight: bold; min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 13px; }
+        .details h3 { font-size: 15px; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .badge-cleared { background: var(--success); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .badge-overdue { background: var(--danger); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .details p { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4; }
+        .details .pending { color: var(--danger); font-weight: 600; margin-top: 3px; display: inline-block; font-size: 13px; }
+        
+        .item-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 10px; }
+        .btn-sm { background: var(--bg-color); color: var(--text-muted); border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .btn-ledger { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-light); font-weight: 600; flex-grow: 1; justify-content: center; }
+        .btn-del-cust { color: var(--danger); border-color: #fee2e2; background: #fff1f2; }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 900px; height: 95vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease; }
+        .modal-header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .close-btn { font-size: 24px; cursor: pointer; line-height: 1; }
+
+        .modal-body { padding: 15px; overflow-y: auto; flex-grow: 1; }
+        
+        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
+        .form-group label { font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px; }
+        .form-group input, .form-group select { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg-color); outline: none; }
+        .form-group input:focus, .form-group select:focus, .persistent-note textarea:focus { border-color: var(--primary); }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .full-width { grid-column: 1 / -1; }
+        .btn-action { background: var(--success); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; width: 100%; margin-top: 5px; }
+
+        /* Dynamic Form Sections */
+        .dynamic-section { display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 12px; }
+        .dynamic-section.active { display: block; }
+
+        .ledger-info { background: var(--primary-light); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--primary); }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+        
+        /* Persistent Note Area */
+        .persistent-note { margin-bottom: 15px; }
+        .persistent-note label { font-size: 13px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+        .persistent-note textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid var(--warning); border-radius: 8px; font-size: 14px; background: #fffbeb; outline: none; resize: none; font-family: inherit; }
+
+        .ledger-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn-wa { background: #25D366; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .btn-print { background: var(--text-main); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; }
+
+        .table-responsive { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px; min-width: 400px; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+        .text-right { text-align: right; }
+        .text-success { color: var(--success); font-weight: 600; }
+        .text-warning { color: var(--warning); font-weight: 600; }
+        .text-danger { color: var(--danger); font-weight: 600; }
+        .del-btn { color: var(--danger); cursor: pointer; border: none; background: none; font-size: 14px; padding: 5px; }
+
+        .modal-footer { background: var(--bg-color); padding: 15px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #ledgerModal, #ledgerModal * { visibility: visible; }
+            #ledgerModal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white; }
+            .close-btn, .entry-form, .ledger-actions, .del-btn, .persistent-note textarea { display: none !important; }
+            .persistent-note::after { content: attr(data-print-note); display: block; padding: 10px; border: 1px dashed black; }
+            .modal-content { box-shadow: none; max-width: 100%; }
+        }
+
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div><i class="fas fa-wallet"></i> ALL HISAB</div>
+        <div class="header-actions">
+            <button class="btn-header" onclick="exportData()" title="Backup Data"><i class="fas fa-download"></i></button>
+            <button class="btn-header" onclick="document.getElementById('importFile').click()" title="Restore Data"><i class="fas fa-upload"></i></button>
+            <input type="file" id="importFile" style="display:none;" accept=".json" onchange="importData(event)">
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchCategory('mobile', this)"><i class="fas fa-mobile-alt"></i> Mobile EMI</button>
+            <button class="tab-btn" onclick="switchCategory('gold', this)"><i class="fas fa-coins"></i> Gold Loan</button>
+            <button class="tab-btn" onclick="switchCategory('library', this)"><i class="fas fa-book-reader"></i> Library</button>
+        </div>
+
+        <!-- ACTION BAR -->
+        <div class="action-bar">
+            <button class="btn btn-add" onclick="openAddModal()"><i class="fas fa-user-plus"></i> Add New</button>
+            <div class="btn btn-total">
+                <span id="totalDueText">Total Due: ₹0</span>
+                <span id="subTotalText" style="font-size: 11px; font-weight: normal; margin-top: 2px;"></span>
+            </div>
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search customer, IMEI, or details..." onkeyup="renderHomeList()">
+            </div>
+        </div>
+
+        <!-- LIST -->
+        <div class="list-container" id="customerList"></div>
+    </div>
+
+    <!-- ADD/EDIT CUSTOMER MODAL -->
+    <div class="modal" id="addModal" onclick="closeOnOverlay(event, 'addModal')">
+        <div class="modal-content" style="height: auto; max-height: 90vh;">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> <span id="addModalTitle">Customer Details</span></h2>
+                <span class="close-btn" onclick="closeAddModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editCustomerId" value="">
+                
+                <div class="form-group">
+                    <label>Customer Full Name</label>
+                    <input type="text" id="addName" placeholder="Enter name..." required>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="addPhone" placeholder="10-digit number" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Start / Registration Date</label>
+                        <input type="date" id="addStartDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-add-detail">Basic Detail</label>
+                    <input type="text" id="addDetail" placeholder="Product name or Basic info..." required>
+                </div>
+
+                <!-- CATEGORY SPECIFIC FIELDS (The 15 Fixes) -->
+                <div id="fields-mobile" class="dynamic-section">
+                    <div class="grid-2">
+                        <div class="form-group"><label>IMEI Number</label><input type="text" id="addImei" placeholder="IMEI..."></div>
+                        <div class="form-group"><label>Invoice/Bill No.</label><input type="text" id="addBill" placeholder="Bill No..."></div>
+                        <div class="form-group full-width"><label>Guarantor Name & Number</label><input type="text" id="addGuarantor" placeholder="Gawah Details..."></div>
+                    </div>
+                </div>
+
+                <div id="fields-gold" class="dynamic-section">
+                    <div class="grid-3">
+                        <div class="form-group"><label>Weight (g)</label><input type="number" id="addWeight" placeholder="e.g. 20" step="0.1"></div>
+                        <div class="form-group">
+                            <label>Purity</label>
+                            <select id="addPurity">
+                                <option value="22K">22K</option><option value="24K">24K</option><option value="18K">18K</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Locker No.</label><input type="text" id="addLocker" placeholder="Locker..."></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Interest Amount (₹)</label>
+                        <input type="number" id="addMonthlyInterest" placeholder="0" min="0">
+                    </div>
+                </div>
+
+                <div id="fields-library" class="dynamic-section">
+                    <div class="grid-3">
+                        <div class="form-group"><label>Seat No.</label><input type="text" id="addSeat" placeholder="Seat..."></div>
+                        <div class="form-group">
+                            <label>Shift</label>
+                            <select id="addShift">
+                                <option value="Morning">Morning</option><option value="Evening">Evening</option><option value="Full Day">Full Day</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Aadhar No.</label><input type="text" id="addAadhar" placeholder="Last 4 digits..."></div>
+                    </div>
+                    <div class="form-group" style="background:#fff1f2; padding:8px; border-radius:6px; border:1px solid #fda4af;">
+                        <label style="color:var(--danger);"><i class="fas fa-clock"></i> Plan Expiry Date</label>
+                        <input type="date" id="addExpiryDate">
+                    </div>
+                </div>
+
+                <!-- FINANCIALS -->
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label id="lbl-add-total">Total Amount (₹)</label>
+                        <input type="number" id="addTotalAmount" placeholder="0" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl-add-advance">Advance Paid (₹)</label>
+                        <input type="number" id="addAdvance" placeholder="0" min="0">
+                    </div>
+                </div>
+
+                <button class="btn-action" onclick="saveCustomer()"><i class="fas fa-check"></i> Save Details</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEDGER MODAL -->
+    <div class="modal" id="ledgerModal" onclick="closeOnOverlay(event, 'ledgerModal')">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="l-cust-name">Name</h2>
+                <span class="close-btn" onclick="closeLedger()">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <div class="ledger-actions">
+                    <button class="btn-wa" onclick="sendWhatsAppReminder()"><i class="fab fa-whatsapp"></i> Send Reminder</button>
+                    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print Khata</button>
+                </div>
+
+                <!-- PERSISTENT NOTE (Requested Feature) -->
+                <div class="persistent-note" id="print-note-container">
+                    <label><i class="fas fa-sticky-note"></i> Customer Persistent Note (Auto-saves)</label>
+                    <textarea id="l-persistent-note" placeholder="Write permanent reminders, conditions, or notes here..." oninput="savePersistentNote()"></textarea>
+                </div>
+
+                <div class="ledger-info">
+                    <div class="info-row"><span id="lbl-detail">Detail:</span> <strong id="l-detail">---</strong></div>
+                    <div class="info-row" id="row-dynamic-info" style="display:none; color:var(--text-muted); font-size:12px;"></div>
+                    <div class="info-row"><span id="lbl-amount">Total / Principal:</span> <strong style="color:var(--primary);">₹<span id="l-amount">0</span></strong></div>
+                    <div class="info-row"><span id="lbl-extra">Advance:</span> <strong style="color:var(--success);">₹<span id="l-extra">0</span></strong></div>
+                    <div class="info-row"><span style="color:var(--text-muted);">Start Date:</span> <span id="l-start-date" style="color:var(--text-muted);">---</span></div>
+                    <div class="info-row" id="row-expiry" style="display:none;"><span style="color:var(--danger); font-weight:bold;">Expiry Date:</span> <span id="l-expiry-date" style="color:var(--danger); font-weight:bold;">---</span></div>
+                </div>
+
+                <!-- ENTRY FORM -->
+                <div class="grid-2 entry-form" style="background: var(--card-bg); padding: 15px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
+                    <div class="form-group full-width">
+                        <label>Date</label>
+                        <input type="date" id="newDate" required>
+                    </div>
+                    <div class="form-group full-width" id="grp-tx-type">
+                        <label>Transaction Type</label>
+                        <select id="newType">
+                            <option value="payment">Principal / EMI Paid (Reduces Due)</option>
+                            <option value="interest">Monthly Interest Paid (Gold)</option>
+                            <option value="penalty">Penalty / Late Fee (Increases Due)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (₹)</label>
+                        <input type="number" id="newAmount" placeholder="0" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Note / Mode</label>
+                        <input type="text" id="newNote" placeholder="Cash, PhonePe..." required>
+                    </div>
+                    <div class="full-width">
+                        <button class="btn-action" onclick="addLedgerEntry()"><i class="fas fa-plus"></i> Add to Ledger</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Detail</th>
+                                <th class="text-right">Amt</th>
+                                <th style="width: 25px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div id="footerLeft">Total Recv: ₹0</div>
+                <div id="footerRight" style="font-size: 16px;">Due: ₹0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Database Init
+        let db = JSON.parse(localStorage.getItem('all_hisab_db')) || { mobile: [], gold: [], library: [] };
+        let currentCategory = 'mobile';
+        let currentActiveItem = null;
+
+        function saveData() { localStorage.setItem('all_hisab_db', JSON.stringify(db)); }
+
+        // EXPORT & IMPORT (Backup)
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const a = document.createElement('a'); a.href = dataStr;
+            a.download = `All_Hisab_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try { db = JSON.parse(e.target.result); saveData(); renderHomeList(); alert("Data restored successfully!"); }
+                    catch (err) { alert("Invalid backup file!"); }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function switchCategory(cat, btn) {
+            currentCategory = cat;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('searchInput').value = '';
+            renderHomeList();
+        }
+
+        // Render Dashboard
+        function renderHomeList() {
+            const listContainer = document.getElementById('customerList');
+            listContainer.innerHTML = '';
+            
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            let totalDashboardDue = 0; let totalMonthlyInterest = 0;
+
+            const data = db[currentCategory];
+            const filtered = data.filter(item => 
+                item.name.toLowerCase().includes(query) || 
+                item.detail.toLowerCase().includes(query) ||
+                (item.imei && item.imei.toLowerCase().includes(query)) ||
+                (item.seat && item.seat.toLowerCase().includes(query))
+            );
+
+            filtered.sort((a,b) => b.id - a.id);
+
+            filtered.forEach((item, index) => {
+                let paidPayments = item.transactions.filter(t => t.type === 'payment').reduce((sum, t) => sum + t.amount, 0);
+                let penalties = item.transactions.filter(t => t.type === 'penalty').reduce((sum, t) => sum + t.amount, 0);
+                
+                let dueAmount = (item.totalAmount + penalties) - ((item.advance || 0) + paidPayments);
+                let isCleared = dueAmount <= 0;
+                
+                totalDashboardDue += (isCleared ? 0 : dueAmount);
+                totalMonthlyInterest += Number(item.monthlyInterest || 0);
+
+                let extraInfo = '';
+                if(currentCategory === 'mobile') extraInfo = item.imei ? `<br>IMEI: ${item.imei}` : '';
+                if(currentCategory === 'gold') extraInfo = `<br>${item.weight||0}g (${item.purity||'22K'}) | Locker: ${item.locker||'N/A'}`;
+                if(currentCategory === 'library') extraInfo = `<br>Seat: ${item.seat||'N/A'} | ${item.shift||''}`;
+
+                // Library Overdue Check
+                let isOverdue = false;
+                if(currentCategory === 'library' && item.expiryDate) {
+                    if(new Date(item.expiryDate) < new Date()) isOverdue = true;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-top">
+                        <div class="customer-info">
+                            <div class="serial">${index + 1}</div>
+                            <div class="details">
+                                <h3>${item.name} 
+                                    ${isCleared ? '<span class="badge-cleared">CLEARED</span>' : ''}
+                                    ${isOverdue ? '<span class="badge-overdue">EXPIRED</span>' : ''}
+                                </h3>
+                                <p>${item.phone ? '<i class="fas fa-phone-alt" style="font-size:10px;"></i> '+item.phone : ''}</p>
+                                <p style="margin-top:4px; font-weight:500;">${item.detail} <span style="font-weight:normal; color:#94a3b8">${extraInfo}</span></p>
+                                ${isCleared ? `<span class="pending" style="color:var(--success);">Account Closed</span>` : `<span class="pending">Due: ₹${dueAmount.toLocaleString('en-IN')}</span>`}
+                                ${currentCategory === 'gold' && item.monthlyInterest ? `<span class="interest-tag">Interest: ₹${item.monthlyInterest}/mo</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-sm" onclick="editCustomer(${item.id})"><i class="fas fa-pen"></i></button>
+                        <button class="btn-sm btn-del-cust" onclick="deleteCustomer(${item.id})"><i class="fas fa-trash"></i></button>
+                        <button class="btn-sm btn-ledger" onclick="openLedger(${item.id})">Open Ledger <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+
+            document.getElementById('totalDueText').innerText = `Total Due: ₹${totalDashboardDue.toLocaleString('en-IN')}`;
+            const subText = document.getElementById('subTotalText');
+            if(currentCategory === 'gold') {
+                subText.innerText = `Total Interest Coming: ₹${totalMonthlyInterest.toLocaleString('en-IN')}/mo`;
+                subText.style.display = 'block';
+            } else { subText.style.display = 'none'; }
+        }
+
+        function deleteCustomer(id) {
+            if(confirm("Warning! Pura hisaab delete ho jayega. Continue?")) {
+                db[currentCategory] = db[currentCategory].filter(item => item.id !== id);
+                saveData(); renderHomeList();
+            }
+        }
+
+        // Add / Edit Modal Logic
+        function openAddModal(editId = null) {
+            document.getElementById('addModal').classList.add('active');
+            
+            // Toggle dynamic sections
+            document.querySelectorAll('.dynamic-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(`fields-${currentCategory}`).classList.add('active');
+
+            const titleObj = { mobile: "Mobile EMI", gold: "Gold Loan", library: "Library Student" };
+            document.getElementById('addModalTitle').innerText = editId ? "Edit Details" : `Add ${titleObj[currentCategory]}`;
+            
+            // Labels
+            document.getElementById('lbl-add-detail').innerText = currentCategory==='library' ? "Plan Name / Info" : (currentCategory==='gold' ? "Gold Item Name" : "Mobile Model Name");
+            document.getElementById('lbl-add-total').innerText = currentCategory==='library' ? "Total Fee (₹)" : (currentCategory==='gold' ? "Principal Given (₹)" : "Sale Price (₹)");
+
+            if(editId) {
+                const c = db[currentCategory].find(i => i.id === editId);
+                document.getElementById('editCustomerId').value = c.id;
+                document.getElementById('addName').value = c.name;
+                document.getElementById('addPhone').value = c.phone || '';
+                document.getElementById('addStartDate').value = c.startDate || '';
+                document.getElementById('addDetail').value = c.detail;
+                document.getElementById('addTotalAmount').value = c.totalAmount;
+                document.getElementById('addAdvance').value = c.advance || 0;
+                
+                // Specifics
+                if(currentCategory==='mobile'){
+                    document.getElementById('addImei').value = c.imei || '';
+                    document.getElementById('addBill').value = c.bill || '';
+                    document.getElementById('addGuarantor').value = c.guarantor || '';
+                }
+                if(currentCategory==='gold'){
+                    document.getElementById('addWeight').value = c.weight || '';
+                    document.getElementById('addPurity').value = c.purity || '22K';
+                    document.getElementById('addLocker').value = c.locker || '';
+                    document.getElementById('addMonthlyInterest').value = c.monthlyInterest || 0;
+                }
+                if(currentCategory==='library'){
+                    document.getElementById('addSeat').value = c.seat || '';
+                    document.getElementById('addShift').value = c.shift || 'Morning';
+                    document.getElementById('addAadhar').value = c.aadhar || '';
+                    document.getElementById('addExpiryDate').value = c.expiryDate || '';
+                }
+            } else {
+                // Reset all
+                document.querySelectorAll('#addModal input').forEach(input => input.value = '');
+                document.getElementById('addStartDate').valueAsDate = new Date();
+                document.getElementById('addPurity').value = '22K';
+                document.getElementById('addShift').value = 'Morning';
+            }
+        }
+
+        function editCustomer(id) { openAddModal(id); }
+        function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+
+        function saveCustomer() {
+            const id = document.getElementById('editCustomerId').value;
+            const name = document.getElementById('addName').value;
+            const phone = document.getElementById('addPhone').value;
+            const startDate = document.getElementById('addStartDate').value;
+            const detail = document.getElementById('addDetail').value;
+            const totalAmount = parseInt(document.getElementById('addTotalAmount').value);
+            const advance = parseInt(document.getElementById('addAdvance').value) || 0;
+
+            if(!name || !detail || isNaN(totalAmount) || totalAmount < 0) return alert("Kripya naam, detail aur amount bharein!");
+
+            let itemData = { name, phone, startDate, detail, totalAmount, advance };
+
+            // Grab specific fields
+            if(currentCategory==='mobile'){
+                itemData.imei = document.getElementById('addImei').value;
+                itemData.bill = document.getElementById('addBill').value;
+                itemData.guarantor = document.getElementById('addGuarantor').value;
+            }
+            if(currentCategory==='gold'){
+                itemData.weight = document.getElementById('addWeight').value;
+                itemData.purity = document.getElementById('addPurity').value;
+                itemData.locker = document.getElementById('addLocker').value;
+                itemData.monthlyInterest = parseInt(document.getElementById('addMonthlyInterest').value) || 0;
+            }
+            if(currentCategory==='library'){
+                itemData.seat = document.getElementById('addSeat').value;
+                itemData.shift = document.getElementById('addShift').value;
+                itemData.aadhar = document.getElementById('addAadhar').value;
+                itemData.expiryDate = document.getElementById('addExpiryDate').value;
+            }
+
+            if(id) {
+                let item = db[currentCategory].find(i => i.id == id);
+                Object.assign(item, itemData); // Merge updates
+            } else {
+                itemData.id = Date.now();
+                itemData.transactions = [];
+                itemData.noteText = ""; // Initialize empty note
+                db[currentCategory].unshift(itemData);
+            }
+            
+            saveData(); closeAddModal(); renderHomeList();
+        }
+
+        // Ledger Logic
+        function openLedger(id) {
+            currentActiveItem = db[currentCategory].find(i => i.id === id);
+            
+            document.getElementById('l-cust-name').innerHTML = `<i class="fas fa-user"></i> ${currentActiveItem.name} ${currentActiveItem.phone ? `(${currentActiveItem.phone})` : ''}`;
+            document.getElementById('l-detail').innerText = currentActiveItem.detail;
+            document.getElementById('l-amount').innerText = currentActiveItem.totalAmount.toLocaleString('en-IN');
+            document.getElementById('l-start-date').innerText = currentActiveItem.startDate ? formatDate(currentActiveItem.startDate) : '---';
+            
+            // Set Persistent Note
+            const noteEl = document.getElementById('l-persistent-note');
+            noteEl.value = currentActiveItem.noteText || '';
+            document.getElementById('print-note-container').setAttribute('data-print-note', currentActiveItem.noteText || 'No remarks.');
+
+            // Dynamic Info row
+            const dynRow = document.getElementById('row-dynamic-info');
+            dynRow.style.display = 'none';
+            if(currentCategory === 'mobile' && (currentActiveItem.imei || currentActiveItem.guarantor)) {
+                dynRow.style.display = 'flex';
+                dynRow.innerHTML = `<span>IMEI: ${currentActiveItem.imei||'N/A'}</span> <span>Gawah: ${currentActiveItem.guarantor||'N/A'}</span>`;
+            }
+            if(currentCategory === 'gold') {
+                dynRow.style.display = 'flex';
+                dynRow.innerHTML = `<span>Wt: ${currentActiveItem.weight||0}g (${currentActiveItem.purity})</span> <span>Locker: ${currentActiveItem.locker||'N/A'}</span>`;
+                document.getElementById('lbl-extra').innerText = "Monthly Interest:";
+                document.getElementById('l-extra').innerText = `${(currentActiveItem.monthlyInterest || 0).toLocaleString('en-IN')}/mo`;
+            } else {
+                document.getElementById('lbl-extra').innerText = "Advance/Down:";
+                document.getElementById('l-extra').innerText = (currentActiveItem.advance || 0).toLocaleString('en-IN');
+            }
+
+            // Expiry Row for Library
+            const expRow = document.getElementById('row-expiry');
+            if(currentCategory === 'library' && currentActiveItem.expiryDate) {
+                expRow.style.display = 'flex';
+                document.getElementById('l-expiry-date').innerText = formatDate(currentActiveItem.expiryDate);
+            } else { expRow.style.display = 'none'; }
+
+            // Default Tx Type
+            document.getElementById('newType').value = 'payment';
+
+            document.getElementById('newDate').valueAsDate = new Date();
+            updateLedgerTable();
+            document.getElementById('ledgerModal').classList.add('active');
+        }
+
+        // Persistent Note Auto-Save Logic
+        function savePersistentNote() {
+            if(currentActiveItem) {
+                const noteVal = document.getElementById('l-persistent-note').value;
+                currentActiveItem.noteText = noteVal;
+                document.getElementById('print-note-container').setAttribute('data-print-note', noteVal || 'No remarks.');
+                saveData(); // Auto save to localStorage
+            }
+        }
+
+        function sendWhatsAppReminder() {
+            if(!currentActiveItem.phone) return alert("Phone number save nahi hai! Edit karke number dalein.");
+            let paid = currentActiveItem.transactions.filter(t => t.type === 'payment').reduce((s,t) => s+t.amount, 0);
+            let penalties = currentActiveItem.transactions.filter(t => t.type === 'penalty').reduce((s,t) => s+t.amount, 0);
+            let due = (currentActiveItem.totalAmount + penalties) - (currentActiveItem.advance + paid);
+            
+            let msg = `Namaste ${currentActiveItem.name},\nAll Hisab par aapka ₹${due} due pending hai for ${currentActiveItem.detail}. Kripya jald jama karein.\n- Himanshu`;
+            window.open(`https://wa.me/91${currentActiveItem.phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function closeLedger() { document.getElementById('ledgerModal').classList.remove('active'); currentActiveItem = null; renderHomeList(); }
+
+        function addLedgerEntry() {
+            const date = document.getElementById('newDate').value;
+            const type = document.getElementById('newType').value;
+            const amount = parseInt(document.getElementById('newAmount').value);
+            const note = document.getElementById('newNote').value;
+
+            if(!date || !note || isNaN(amount) || amount <= 0) return alert("Sahi Amount aur Note bharna anivarya hai!");
+
+            currentActiveItem.transactions.unshift({ id: Date.now(), date, type, amount, note });
+            currentActiveItem.transactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            saveData();
+            document.getElementById('newAmount').value = ''; document.getElementById('newNote').value = '';
+            updateLedgerTable();
+        }
+
+        function deleteTransaction(id) {
+            if(confirm("Delete this entry?")) {
+                currentActiveItem.transactions = currentActiveItem.transactions.filter(t => t.id !== id);
+                saveData(); updateLedgerTable();
+            }
+        }
+
+        function formatDate(dateStr) {
+            if(!dateStr) return "";
+            const [y, m, d] = dateStr.split('-'); return `${d}-${m}-${y}`;
+        }
+
+        function updateLedgerTable() {
+            const tbody = document.getElementById('transactionBody');
+            tbody.innerHTML = '';
+            
+            let totalPaid = 0; let totalInterestPaid = 0; let totalPenalties = 0;
+
+            currentActiveItem.transactions.forEach((t) => {
+                if(t.type === 'payment') totalPaid += t.amount;
+                if(t.type === 'interest') totalInterestPaid += t.amount;
+                if(t.type === 'penalty') totalPenalties += t.amount;
+
+                let badge = t.type === 'interest' ? '<span class="text-warning">⚡ Byaj</span>' : 
+                            (t.type === 'penalty' ? '<span class="text-danger">⚠️ Penalty</span>' : '<span class="text-success">✓ Prin.</span>');
+                
+                let amountClass = t.type === 'penalty' ? 'text-danger' : (t.type === 'interest' ? 'text-warning' : 'text-success');
+                let amountSign = t.type === 'penalty' ? '-' : '+'; // logical visual indicator
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:12px; white-space: nowrap;">${formatDate(t.date)}</td>
+                        <td style="font-size:12px;">${badge}<br>${t.note}</td>
+                        <td class="text-right ${amountClass}">${amountSign}₹${t.amount.toLocaleString('en-IN')}</td>
+                        <td><button class="del-btn" onclick="deleteTransaction(${t.id})"><i class="fas fa-times"></i></button></td>
+                    </tr>
+                `;
+            });
+
+            let principalDue = (currentActiveItem.totalAmount + totalPenalties) - (currentActiveItem.advance + totalPaid);
+            let footerRight = document.getElementById('footerRight');
+
+            document.getElementById('footerLeft').innerHTML = `Total Recv: ₹${(currentActiveItem.advance + totalPaid).toLocaleString('en-IN')} ${totalInterestPaid > 0 ? `<br><small style="color:var(--warning)">Interest Recv: ₹${totalInterestPaid.toLocaleString('en-IN')}</small>` : ''}`;
+            
+            if(principalDue <= 0) {
+                footerRight.innerHTML = `<span style="color:var(--success);">Cleared (₹0 Due)</span>`;
+            } else {
+                footerRight.innerHTML = `<span style="color:var(--danger);">Due: ₹${principalDue.toLocaleString('en-IN')}</span>`;
+            }
+        }
+
+        function closeOnOverlay(e, modalId) {
+            if (e.target.id === modalId) { if(modalId === 'addModal') closeAddModal(); if(modalId === 'ledgerModal') closeLedger(); }
+        }
+
+        renderHomeList();
+    </script>
+</body>
+</html>
