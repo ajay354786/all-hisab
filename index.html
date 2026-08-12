@@ -93,6 +93,7 @@
 
         .dynamic-section { display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 12px; }
         .dynamic-section.active { display: block; }
+
         .ledger-info { background: var(--primary-light); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--primary); }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
         
@@ -116,6 +117,7 @@
         .del-btn { color: var(--danger); cursor: pointer; border: none; background: none; font-size: 14px; padding: 5px; }
 
         .modal-footer { background: var(--bg-color); padding: 15px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
+        
         .gold-img { max-width: 80px; max-height: 80px; border-radius: 8px; border: 1px solid #cbd5e1; object-fit: cover; }
 
         @media print {
@@ -149,7 +151,13 @@
         <header>
             <div><i class="fas fa-cloud"></i> ALL HISAB PRO</div>
             <div class="header-actions">
-                <button class="btn-header" onclick="exportData()" title="Backup"><i class="fas fa-download"></i></button>
+                <!-- FULL BACKUP BUTTON -->
+                <button class="btn-header" onclick="exportData()" title="Backup to PC"><i class="fas fa-download"></i></button>
+                
+                <!-- FULL RESTORE BUTTON (ADDED BACK) -->
+                <button class="btn-header" onclick="document.getElementById('importFile').click()" title="Full Restore"><i class="fas fa-upload"></i></button>
+                <input type="file" id="importFile" style="display:none;" accept=".json" onchange="importData(event)">
+                
                 <button class="btn-header btn-logout" onclick="logout()" title="Lock App"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </header>
@@ -305,7 +313,10 @@
         const firebaseConfig = {
             apiKey: "AIzaSyC0hd47zuyx8JbtFRxEB25Cj-CfZSFSSBU",
             authDomain: "allhisab-1dbb2.firebaseapp.com",
+            
+            // YAHAN PAR APNA SAHI ASIA SERVER WALA LINK DALEIN AGAR YE NAHI CHALE TOH:
             databaseURL: "https://allhisab-1dbb2-default-rtdb.firebaseio.com", 
+            
             projectId: "allhisab-1dbb2",
             storageBucket: "allhisab-1dbb2.firebasestorage.app",
             messagingSenderId: "724063175679",
@@ -326,10 +337,14 @@
                 const data = snapshot.val();
                 if (data) {
                     db = data;
-                    if (!db.mobile) db.mobile = [];
-                    if (!db.gold) db.gold = [];
-                    if (!db.library) db.library = [];
+                } else {
+                    db = { mobile: [], gold: [], library: [] };
                 }
+                
+                if (!db.mobile) db.mobile = [];
+                if (!db.gold) db.gold = [];
+                if (!db.library) db.library = [];
+                
                 renderHomeList();
                 
                 // Live update modal if it's open
@@ -338,12 +353,16 @@
                     if(currentActiveItem) updateLedgerTable();
                     else closeLedger();
                 }
+            }, (error) => {
+                alert("Database Connection Error: " + error.message);
             });
         }
 
         // Save data to Cloud
         function saveData() {
-            database.ref('allHisabData').set(db);
+            database.ref('allHisabData').set(db).catch((error) => {
+                alert("Cloud Sync Error! Check Firebase Database Rules. Error: " + error.message);
+            });
         }
 
         // --- LOGIN LOGIC ---
@@ -568,6 +587,25 @@
             document.getElementById('footerRight').innerHTML = principalDue <= 0 ? `<span style="color:var(--success);">Cleared (₹0)</span>` : `<span style="color:var(--danger);">Due: ₹${principalDue.toLocaleString('en-IN')}</span>`;
         }
 
+        // FULL RESTORE DATA FUNCTION
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        db = JSON.parse(e.target.result);
+                        saveData(); 
+                        renderHomeList();
+                        alert("Full Backup restored and synced to Cloud!");
+                    } catch (err) { alert("Invalid backup file!"); }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            }
+        }
+
+        // SECTION UPLOAD DATA FUNCTION
         function importSectionJSON(event) {
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
@@ -581,7 +619,8 @@
                         return { id: Date.now() + Math.random(), name: item.name || 'Unknown', phone: '', startDate: item.date || new Date().toISOString().split('T')[0], expiryDate: item.emiBaseDate || '', detail: item.item || 'Imported', totalAmount: tAmt, advance: adv, monthlyInterest: mInt, emiAmount: emiAmt, noteText: item.note || '', imgSrc: item.imgSrc || null, transactions: txs };
                     });
                     db[currentCategory] = [...importedData, ...db[currentCategory]];
-                    saveData(); alert(`Success! Data sent to Cloud.`);
+                    saveData();
+                    alert(`${importedData.length} records imported to Cloud!`);
                 } catch (err) { alert("Invalid JSON!"); }
                 event.target.value = ''; 
             }; reader.readAsText(file);
