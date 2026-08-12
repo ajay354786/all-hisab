@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Earning & Expense Tracker</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4338ca; --primary-light: #e0e7ff;
+            --bg-color: #f1f5f9; --card-bg: #ffffff;
+            --text-main: #1e293b; --text-muted: #64748b;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+            --border: #e2e8f0; --info: #3b82f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 30px; }
+
+        header { background: linear-gradient(135deg, var(--primary), #3730a3); color: white; padding: 15px 20px; text-align: center; font-size: 20px; font-weight: 700; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .container { max-width: 900px; margin: 0 auto; padding: 15px; }
+
+        /* Summary Cards */
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .summary-card { background: var(--card-bg); padding: 15px 10px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .summary-card h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
+        .summary-card .amt { font-size: 18px; font-weight: bold; }
+        .text-success { color: var(--success); } .text-danger { color: var(--danger); } .text-primary { color: var(--primary); }
+
+        /* Filter Section */
+        .filter-section { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .filter-buttons { display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .filter-buttons::-webkit-scrollbar { display: none; }
+        .btn-filter { flex: 1; min-width: 80px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-color); color: var(--text-main); font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .date-picker-container { display: flex; align-items: center; gap: 10px; }
+        .date-picker-container input[type="date"] { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: var(--card-bg); font-weight: 600; font-size: 15px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .tab-btn.active.income { background: var(--success); color: white; }
+        .tab-btn.active.expense { background: var(--danger); color: white; }
+
+        /* Category Rows */
+        .category-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+        .cat-row { background: var(--card-bg); padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 8px; border-left: 4px solid var(--success); }
+        .cat-row.expense-row { border-left-color: var(--danger); }
+        
+        .cat-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 15px; }
+        .cat-actions button { background: none; border: none; cursor: pointer; padding: 5px; font-size: 14px; color: var(--text-muted); }
+        .cat-actions button.edit:hover { color: var(--info); }
+        .cat-actions button.delete:hover { color: var(--danger); }
+        
+        .cat-inputs { display: flex; gap: 8px; }
+        .cat-inputs input { padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; }
+        .cat-inputs input[type="number"] { width: 35%; }
+        .cat-inputs input[type="text"] { width: 65%; }
+        .btn-save-entry { background: var(--info); color: white; border: none; border-radius: 6px; padding: 0 15px; font-weight: bold; cursor: pointer; }
+
+        .btn-add-cat { width: 100%; padding: 12px; background: var(--card-bg); border: 2px dashed var(--border); border-radius: 10px; color: var(--text-muted); font-weight: bold; cursor: pointer; margin-bottom: 20px; }
+
+        /* History Table */
+        .history-section { background: var(--card-bg); border-radius: 12px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .history-section h3 { margin-bottom: 12px; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { text-align: left; padding: 10px 5px; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); }
+        .del-btn { color: var(--danger); background: none; border: none; cursor: pointer; padding: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <i class="fas fa-chart-line"></i> Daily Hisab Tracker
+    </header>
+
+    <div class="container">
+        <!-- Date Filters -->
+        <div class="filter-section">
+            <div class="filter-buttons">
+                <button class="btn-filter active" onclick="setFilter('today', this)">Today</button>
+                <button class="btn-filter" onclick="setFilter('yesterday', this)">Yesterday</button>
+                <button class="btn-filter" onclick="setFilter('month', this)">This Month</button>
+            </div>
+            <div class="date-picker-container">
+                <input type="date" id="filterDate" onchange="setFilter('custom', null)">
+                <button class="btn-filter" style="flex: 0; min-width: 40px; background: var(--primary); color:white;" onclick="setFilter('custom', null)"><i class="fas fa-search"></i></button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h4>Income</h4>
+                <div class="amt text-success" id="sumIncome">₹0</div>
+            </div>
+            <div class="summary-card">
+                <h4>Expense</h4>
+                <div class="amt text-danger" id="sumExpense">₹0</div>
+            </div>
+            <div class="summary-card">
+                <h4>Balance</h4>
+                <div class="amt text-primary" id="sumBalance">₹0</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active income" id="tabIncome" onclick="switchTab('income')">Earnings (Kamai)</button>
+            <button class="tab-btn expense" id="tabExpense" onclick="switchTab('expense')">Expenses (Kharcha)</button>
+        </div>
+
+        <!-- Dynamic Category Rows -->
+        <div class="category-container" id="categoryList">
+            <!-- Rendered by JS -->
+        </div>
+
+        <button class="btn-add-cat" onclick="addNewCategory()">+ Add New Category</button>
+
+        <!-- Transaction History -->
+        <div class="history-section">
+            <h3 id="historyTitle">Recent Entries</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category & Note</th>
+                            <th style="text-align: right;">Amount</th>
+                            <th style="width: 30px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATABASE INITIALIZATION ---
+        let db = JSON.parse(localStorage.getItem('daily_tracker_db')) || {
+            categories: {
+                income: ['AEPS Commission', 'Gold Loan Byaj', 'Emitra Form', 'Money Transfer'],
+                expense: ['Chai / Snacks', 'Shop Rent', 'Electricity Bill', 'Stationery']
+            },
+            transactions: []
+        };
+
+        let currentTab = 'income';
+        let currentFilter = 'today'; 
+
+        function saveData() {
+            localStorage.setItem('daily_tracker_db', JSON.stringify(db));
+        }
+
+        // --- FILTER & DATE LOGIC ---
+        function getTodayDate() { return new Date().toISOString().split('T')[0]; }
+        
+        function getYesterdayDate() {
+            let d = new Date(); d.setDate(d.getDate() - 1);
+            return d.toISOString().split('T')[0];
+        }
+
+        function getMonthString() {
+            return new Date().toISOString().slice(0, 7); // YYYY-MM
+        }
+
+        // Initialize Date Picker
+        document.getElementById('filterDate').value = getTodayDate();
+
+        function setFilter(type, btnElement) {
+            currentFilter = type;
+            
+            // UI Update for buttons
+            if(btnElement) {
+                document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+                btnElement.classList.add('active');
+            } else if (type === 'custom') {
+                document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            }
+
+            // Set Date input based on filter
+            if(type === 'today') document.getElementById('filterDate').value = getTodayDate();
+            if(type === 'yesterday') document.getElementById('filterDate').value = getYesterdayDate();
+            
+            renderHistoryAndTotals();
+        }
+
+        // --- TAB LOGIC ---
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tabIncome').classList.remove('active', 'income');
+            document.getElementById('tabExpense').classList.remove('active', 'expense');
+            
+            if(tab === 'income') document.getElementById('tabIncome').classList.add('active', 'income');
+            if(tab === 'expense') document.getElementById('tabExpense').classList.add('active', 'expense');
+            
+            renderCategories();
+        }
+
+        // --- CATEGORY LOGIC ---
+        function renderCategories() {
+            const container = document.getElementById('categoryList');
+            container.innerHTML = '';
+            
+            const cats = db.categories[currentTab];
+            const rowClass = currentTab === 'income' ? '' : 'expense-row';
+
+            cats.forEach((cat, index) => {
+                // Generate a safe ID for inputs
+                const safeId = cat.replace(/\s+/g, '') + index;
+                
+                container.innerHTML += `
+                    <div class="cat-row ${rowClass}">
+                        <div class="cat-header">
+                            <span>${cat}</span>
+                            <div class="cat-actions">
+                                <button class="edit" onclick="editCategory(${index})"><i class="fas fa-pen"></i></button>
+                                <button class="delete" onclick="deleteCategory(${index})"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="cat-inputs">
+                            <input type="number" id="amt_${safeId}" placeholder="Amount (₹)" onkeypress="handleEnter(event, '${safeId}', '${cat}')">
+                            <input type="text" id="note_${safeId}" placeholder="Note (Optional)" onkeypress="handleEnter(event, '${safeId}', '${cat}')">
+                            <button class="btn-save-entry" onclick="saveEntry('${safeId}', '${cat}')"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addNewCategory() {
+            let catName = prompt(`Enter new ${currentTab === 'income' ? 'Earning' : 'Expense'} category name:`);
+            if(catName && catName.trim() !== '') {
+                db.categories[currentTab].push(catName.trim());
+                saveData(); renderCategories();
+            }
+        }
+
+        function editCategory(index) {
+            let oldName = db.categories[currentTab][index];
+            let newName = prompt("Rename category:", oldName);
+            if(newName && newName.trim() !== '' && newName !== oldName) {
+                // Update category name
+                db.categories[currentTab][index] = newName.trim();
+                
+                // Optional: Update old transactions to new category name
+                if(confirm("Do you want to update all old entries to this new name too?")) {
+                    db.transactions.forEach(t => {
+                        if(t.type === currentTab && t.category === oldName) {
+                            t.category = newName.trim();
+                        }
+                    });
+                }
+                saveData(); renderCategories(); renderHistoryAndTotals();
+            }
+        }
+
+        function deleteCategory(index) {
+            if(confirm("Delete this category? (Old saved entries will not be deleted)")) {
+                db.categories[currentTab].splice(index, 1);
+                saveData(); renderCategories();
+            }
+        }
+
+        // --- ENTRY SAVE LOGIC ---
+        function handleEnter(event, safeId, categoryName) {
+            if (event.key === "Enter") {
+                saveEntry(safeId, categoryName);
+            }
+        }
+
+        function saveEntry(safeId, categoryName) {
+            const amtInput = document.getElementById(`amt_${safeId}`);
+            const noteInput = document.getElementById(`note_${safeId}`);
+            
+            const amount = parseInt(amtInput.value);
+            const note = noteInput.value.trim();
+            // Entry humesha Date Picker me selected date ke hisaab se save hogi
+            const date = document.getElementById('filterDate').value; 
+
+            if(!date) return alert("Please select a date in the top filter!");
+            if(isNaN(amount) || amount <= 0) return alert("Please enter a valid amount!");
+
+            const newEntry = {
+                id: Date.now(),
+                date: date,
+                type: currentTab,
+                category: categoryName,
+                amount: amount,
+                note: note
+            };
+
+            db.transactions.unshift(newEntry); // Nayi entry sabse upar
+            saveData();
+
+            // Clear inputs and show success effect
+            amtInput.value = '';
+            noteInput.value = '';
+            amtInput.focus(); // Keep focus for fast entry
+
+            renderHistoryAndTotals();
+        }
+
+        // --- HISTORY & TOTALS LOGIC ---
+        function deleteTransaction(id) {
+            if(confirm("Are you sure you want to delete this entry?")) {
+                db.transactions = db.transactions.filter(t => t.id !== id);
+                saveData(); renderHistoryAndTotals();
+            }
+        }
+
+        function formatDate(dateStr) {
+            if(!dateStr) return "";
+            const [y, m, d] = dateStr.split('-'); return `${d}-${m}-${y}`;
+        }
+
+        function renderHistoryAndTotals() {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+
+            let filterDate = document.getElementById('filterDate').value;
+            let monthStr = getMonthString();
+
+            let totalInc = 0;
+            let totalExp = 0;
+
+            let displayData = [];
+
+            // Filter Logic
+            if(currentFilter === 'month') {
+                displayData = db.transactions.filter(t => t.date.startsWith(monthStr));
+                document.getElementById('historyTitle').innerText = `Entries for This Month`;
+            } else {
+                // Today, Yesterday, or Custom specific date
+                displayData = db.transactions.filter(t => t.date === filterDate);
+                document.getElementById('historyTitle').innerText = `Entries for ${formatDate(filterDate)}`;
+            }
+
+            // Sorting by newest first
+            displayData.sort((a,b) => b.id - a.id);
+
+            displayData.forEach(t => {
+                if(t.type === 'income') totalInc += t.amount;
+                if(t.type === 'expense') totalExp += t.amount;
+
+                let colorClass = t.type === 'income' ? 'text-success' : 'text-danger';
+                let sign = t.type === 'income' ? '+' : '-';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:11px; white-space:nowrap;">${formatDate(t.date)}</td>
+                        <td>
+                            <strong>${t.category}</strong>
+                            ${t.note ? `<br><span style="font-size:11px; color:var(--text-muted);">${t.note}</span>` : ''}
+                        </td>
+                        <td style="text-align: right;" class="${colorClass}">${sign}₹${t.amount.toLocaleString('en-IN')}</td>
+                        <td><button class="del-btn" onclick="deleteTransaction(${t.id})"><i class="fas fa-times"></i></button></td>
+                    </tr>
+                `;
+            });
+
+            if(displayData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No entries found for this period.</td></tr>`;
+            }
+
+            // Update Summary Cards
+            document.getElementById('sumIncome').innerText = `₹${totalInc.toLocaleString('en-IN')}`;
+            document.getElementById('sumExpense').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
+            
+            let balance = totalInc - totalExp;
+            document.getElementById('sumBalance').innerText = `₹${balance.toLocaleString('en-IN')}`;
+            document.getElementById('sumBalance').className = `amt ${balance >= 0 ? 'text-primary' : 'text-danger'}`;
+        }
+
+        // Init App
+        switchTab('income');
+        setFilter('today', document.querySelector('.btn-filter.active'));
+
+    </script>
+</body>
+</html>
