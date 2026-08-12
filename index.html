@@ -29,13 +29,14 @@
         .tab-btn { flex: 1; min-width: 110px; padding: 12px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text-muted); font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(67, 56, 202, 0.2); }
 
-        .action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.2s; }
+        .action-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .btn { padding: 10px; border: none; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.2s; }
         .btn:active { transform: scale(0.95); }
         .btn-add { background: var(--success); color: white; }
+        .btn-upload { background: #3b82f6; color: white; }
         .btn-total { background: var(--warning); color: white; flex-direction: column; align-items: center; line-height: 1.2; text-align: center; }
         
-        .search-container { grid-column: span 2; display: flex; background: var(--card-bg); border-radius: 10px; padding: 0 15px; align-items: center; border: 1px solid var(--border); }
+        .search-container { grid-column: span 3; display: flex; background: var(--card-bg); border-radius: 10px; padding: 0 15px; align-items: center; border: 1px solid var(--border); }
         .search-container input { border: none; outline: none; width: 100%; padding: 12px 10px; font-size: 14px; background: transparent; }
 
         .list-container { display: flex; flex-direction: column; gap: 10px; }
@@ -74,21 +75,20 @@
         .full-width { grid-column: 1 / -1; }
         .btn-action { background: var(--success); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; width: 100%; margin-top: 5px; }
 
-        /* Dynamic Form Sections */
         .dynamic-section { display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 12px; }
         .dynamic-section.active { display: block; }
 
         .ledger-info { background: var(--primary-light); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--primary); }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
         
-        /* Persistent Note Area */
         .persistent-note { margin-bottom: 15px; }
         .persistent-note label { font-size: 13px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
         .persistent-note textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid var(--warning); border-radius: 8px; font-size: 14px; background: #fffbeb; outline: none; resize: none; font-family: inherit; }
 
-        .ledger-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .ledger-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         .btn-wa { background: #25D366; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; }
         .btn-print { background: var(--text-main); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .btn-clear { background: #fee2e2; color: var(--danger); border: 1px solid var(--danger); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; }
 
         .table-responsive { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px; min-width: 400px; }
@@ -102,6 +102,8 @@
 
         .modal-footer { background: var(--bg-color); padding: 15px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
         
+        .gold-img { max-width: 80px; max-height: 80px; border-radius: 8px; border: 1px solid #cbd5e1; object-fit: cover; }
+
         @media print {
             body * { visibility: hidden; }
             #ledgerModal, #ledgerModal * { visibility: visible; }
@@ -119,8 +121,8 @@
     <header>
         <div><i class="fas fa-wallet"></i> ALL HISAB</div>
         <div class="header-actions">
-            <button class="btn-header" onclick="exportData()" title="Backup Data"><i class="fas fa-download"></i></button>
-            <button class="btn-header" onclick="document.getElementById('importFile').click()" title="Restore Data"><i class="fas fa-upload"></i></button>
+            <button class="btn-header" onclick="exportData()" title="Full Backup"><i class="fas fa-download"></i></button>
+            <button class="btn-header" onclick="document.getElementById('importFile').click()" title="Full Restore"><i class="fas fa-upload"></i></button>
             <input type="file" id="importFile" style="display:none;" accept=".json" onchange="importData(event)">
         </div>
     </header>
@@ -136,13 +138,21 @@
         <!-- ACTION BAR -->
         <div class="action-bar">
             <button class="btn btn-add" onclick="openAddModal()"><i class="fas fa-user-plus"></i> Add New</button>
+            
+            <!-- SECTION JSON UPLOAD BUTTON -->
+            <button class="btn btn-upload" onclick="document.getElementById('sectionImportFile').click()">
+                <i class="fas fa-file-import"></i> Upload JSON
+            </button>
+            <input type="file" id="sectionImportFile" style="display:none;" accept=".json" onchange="importSectionJSON(event)">
+            
             <div class="btn btn-total">
                 <span id="totalDueText">Total Due: ₹0</span>
                 <span id="subTotalText" style="font-size: 11px; font-weight: normal; margin-top: 2px;"></span>
             </div>
+            
             <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search customer, IMEI, or details..." onkeyup="renderHomeList()">
+                <input type="text" id="searchInput" placeholder="Search name, IMEI, details or notes..." onkeyup="renderHomeList()">
             </div>
         </div>
 
@@ -168,7 +178,7 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="tel" id="addPhone" placeholder="10-digit number" required>
+                        <input type="tel" id="addPhone" placeholder="10-digit number">
                     </div>
                     <div class="form-group">
                         <label>Start / Registration Date</label>
@@ -181,11 +191,11 @@
                     <input type="text" id="addDetail" placeholder="Product name or Basic info..." required>
                 </div>
 
-                <!-- CATEGORY SPECIFIC FIELDS (The 15 Fixes) -->
+                <!-- CATEGORY SPECIFIC FIELDS -->
                 <div id="fields-mobile" class="dynamic-section">
                     <div class="grid-2">
                         <div class="form-group"><label>IMEI Number</label><input type="text" id="addImei" placeholder="IMEI..."></div>
-                        <div class="form-group"><label>Invoice/Bill No.</label><input type="text" id="addBill" placeholder="Bill No..."></div>
+                        <div class="form-group"><label>Monthly EMI (₹)</label><input type="number" id="addEmiAmount" placeholder="EMI Amount"></div>
                         <div class="form-group full-width"><label>Guarantor Name & Number</label><input type="text" id="addGuarantor" placeholder="Gawah Details..."></div>
                     </div>
                 </div>
@@ -219,7 +229,7 @@
                         <div class="form-group"><label>Aadhar No.</label><input type="text" id="addAadhar" placeholder="Last 4 digits..."></div>
                     </div>
                     <div class="form-group" style="background:#fff1f2; padding:8px; border-radius:6px; border:1px solid #fda4af;">
-                        <label style="color:var(--danger);"><i class="fas fa-clock"></i> Plan Expiry Date</label>
+                        <label style="color:var(--danger);"><i class="fas fa-clock"></i> Next Due / Expiry Date</label>
                         <input type="date" id="addExpiryDate">
                     </div>
                 </div>
@@ -251,23 +261,32 @@
             
             <div class="modal-body">
                 <div class="ledger-actions">
-                    <button class="btn-wa" onclick="sendWhatsAppReminder()"><i class="fab fa-whatsapp"></i> Send Reminder</button>
-                    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print Khata</button>
+                    <button class="btn-wa" onclick="sendWhatsAppReminder()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+                    <button class="btn-clear" onclick="clearLedgerHistory()"><i class="fas fa-eraser"></i> Clear History</button>
                 </div>
 
-                <!-- PERSISTENT NOTE (Requested Feature) -->
+                <!-- PERSISTENT NOTE -->
                 <div class="persistent-note" id="print-note-container">
                     <label><i class="fas fa-sticky-note"></i> Customer Persistent Note (Auto-saves)</label>
-                    <textarea id="l-persistent-note" placeholder="Write permanent reminders, conditions, or notes here..." oninput="savePersistentNote()"></textarea>
+                    <textarea id="l-persistent-note" placeholder="Write permanent reminders, conditions, or imported notes here..." oninput="savePersistentNote()"></textarea>
                 </div>
 
                 <div class="ledger-info">
-                    <div class="info-row"><span id="lbl-detail">Detail:</span> <strong id="l-detail">---</strong></div>
-                    <div class="info-row" id="row-dynamic-info" style="display:none; color:var(--text-muted); font-size:12px;"></div>
-                    <div class="info-row"><span id="lbl-amount">Total / Principal:</span> <strong style="color:var(--primary);">₹<span id="l-amount">0</span></strong></div>
-                    <div class="info-row"><span id="lbl-extra">Advance:</span> <strong style="color:var(--success);">₹<span id="l-extra">0</span></strong></div>
-                    <div class="info-row"><span style="color:var(--text-muted);">Start Date:</span> <span id="l-start-date" style="color:var(--text-muted);">---</span></div>
-                    <div class="info-row" id="row-expiry" style="display:none;"><span style="color:var(--danger); font-weight:bold;">Expiry Date:</span> <span id="l-expiry-date" style="color:var(--danger); font-weight:bold;">---</span></div>
+                    <div style="display:flex; justify-content: space-between;">
+                        <div style="flex-grow: 1;">
+                            <div class="info-row"><span id="lbl-detail">Detail:</span> <strong id="l-detail">---</strong></div>
+                            <div class="info-row" id="row-dynamic-info" style="display:none; color:var(--text-muted); font-size:12px;"></div>
+                            <div class="info-row"><span id="lbl-amount">Total / Principal:</span> <strong style="color:var(--primary);">₹<span id="l-amount">0</span></strong></div>
+                            <div class="info-row"><span id="lbl-extra">Advance:</span> <strong style="color:var(--success);">₹<span id="l-extra">0</span></strong></div>
+                            <div class="info-row"><span style="color:var(--text-muted);">Start Date:</span> <span id="l-start-date" style="color:var(--text-muted);">---</span></div>
+                            <div class="info-row" id="row-expiry" style="display:none;"><span style="color:var(--danger); font-weight:bold;">Next Due:</span> <span id="l-expiry-date" style="color:var(--danger); font-weight:bold;">---</span></div>
+                        </div>
+                        <!-- GOLD IMAGE THUMBNAIL -->
+                        <div id="l-gold-img-container" style="display:none; margin-left:10px;">
+                            <img id="l-gold-img" class="gold-img" src="" alt="Gold Item">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- ENTRY FORM -->
@@ -327,7 +346,76 @@
 
         function saveData() { localStorage.setItem('all_hisab_db', JSON.stringify(db)); }
 
-        // EXPORT & IMPORT (Backup)
+        // --- SECTION SPECIFIC JSON UPLOAD (The Major Fix) ---
+        function importSectionJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    const normalizedData = importedData.map(item => {
+                        // Data Schema Mapping[cite: 1, 2, 3]
+                        let tAmt = 0, adv = 0, mInt = 0, emiAmt = 0;
+                        
+                        if(currentCategory === 'mobile') {
+                            tAmt = item.totalPrice || item.amount || 0;
+                            adv = item.downPayment || 0;
+                            emiAmt = item.amount || 0; 
+                        } else if(currentCategory === 'gold') {
+                            tAmt = item.amount || 0;
+                            adv = 0;
+                            mInt = item.rate || 0;
+                        } else if(currentCategory === 'library') {
+                            tAmt = item.rate || 500;
+                            adv = 0;
+                        }
+
+                        // Normalize Transactions[cite: 1]
+                        let txs = (item.payments || []).map(tx => ({
+                            id: Date.now() + Math.random(),
+                            date: tx.date || new Date().toISOString().split('T')[0],
+                            type: 'payment',
+                            amount: tx.amt || tx.amount || 0,
+                            note: tx.note || 'Imported Entry'
+                        }));
+                        
+                        // Sort transactions Descending by default
+                        txs.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+                        return {
+                            id: Date.now() + Math.random(),
+                            name: item.name || 'Unknown',
+                            phone: '',
+                            startDate: item.date || new Date().toISOString().split('T')[0],
+                            expiryDate: item.emiBaseDate || '', // Extracted from JSON
+                            detail: item.item || 'Imported',
+                            totalAmount: tAmt,
+                            advance: adv,
+                            monthlyInterest: mInt,
+                            emiAmount: emiAmt,
+                            noteText: item.note || '', // Putting root note in persistent box
+                            imgSrc: item.imgSrc || null, // Keeping Gold images intact
+                            transactions: txs
+                        };
+                    });
+
+                    // Prepend to current category
+                    db[currentCategory] = [...normalizedData, ...db[currentCategory]];
+                    saveData();
+                    renderHomeList();
+                    alert(`${normalizedData.length} records successfully imported into ${currentCategory.toUpperCase()}!`);
+                } catch (err) {
+                    alert("Invalid JSON file format!");
+                }
+                event.target.value = ''; // reset input
+            };
+            reader.readAsText(file);
+        }
+
+        // FULL EXPORT & IMPORT (Backup)
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
             const a = document.createElement('a'); a.href = dataStr;
@@ -368,9 +456,10 @@
                 item.name.toLowerCase().includes(query) || 
                 item.detail.toLowerCase().includes(query) ||
                 (item.imei && item.imei.toLowerCase().includes(query)) ||
-                (item.seat && item.seat.toLowerCase().includes(query))
+                (item.noteText && item.noteText.toLowerCase().includes(query)) // Search in Notes
             );
 
+            // Sort: Latest updated first 
             filtered.sort((a,b) => b.id - a.id);
 
             filtered.forEach((item, index) => {
@@ -388,11 +477,9 @@
                 if(currentCategory === 'gold') extraInfo = `<br>${item.weight||0}g (${item.purity||'22K'}) | Locker: ${item.locker||'N/A'}`;
                 if(currentCategory === 'library') extraInfo = `<br>Seat: ${item.seat||'N/A'} | ${item.shift||''}`;
 
-                // Library Overdue Check
+                // Due/Expiry Check
                 let isOverdue = false;
-                if(currentCategory === 'library' && item.expiryDate) {
-                    if(new Date(item.expiryDate) < new Date()) isOverdue = true;
-                }
+                if(item.expiryDate && new Date(item.expiryDate) < new Date()) isOverdue = true;
 
                 const div = document.createElement('div');
                 div.className = 'list-item';
@@ -403,7 +490,7 @@
                             <div class="details">
                                 <h3>${item.name} 
                                     ${isCleared ? '<span class="badge-cleared">CLEARED</span>' : ''}
-                                    ${isOverdue ? '<span class="badge-overdue">EXPIRED</span>' : ''}
+                                    ${isOverdue && !isCleared ? '<span class="badge-overdue">OVERDUE</span>' : ''}
                                 </h3>
                                 <p>${item.phone ? '<i class="fas fa-phone-alt" style="font-size:10px;"></i> '+item.phone : ''}</p>
                                 <p style="margin-top:4px; font-weight:500;">${item.detail} <span style="font-weight:normal; color:#94a3b8">${extraInfo}</span></p>
@@ -423,10 +510,13 @@
 
             document.getElementById('totalDueText').innerText = `Total Due: ₹${totalDashboardDue.toLocaleString('en-IN')}`;
             const subText = document.getElementById('subTotalText');
-            if(currentCategory === 'gold') {
-                subText.innerText = `Total Interest Coming: ₹${totalMonthlyInterest.toLocaleString('en-IN')}/mo`;
-                subText.style.display = 'block';
-            } else { subText.style.display = 'none'; }
+            
+            // Show Customer Count and Interest
+            let subHTML = `Customers: ${filtered.length}`;
+            if(currentCategory === 'gold') subHTML += ` | Int: ₹${totalMonthlyInterest.toLocaleString('en-IN')}/mo`;
+            
+            subText.innerHTML = subHTML;
+            subText.style.display = 'block';
         }
 
         function deleteCustomer(id) {
@@ -461,10 +551,9 @@
                 document.getElementById('addTotalAmount').value = c.totalAmount;
                 document.getElementById('addAdvance').value = c.advance || 0;
                 
-                // Specifics
                 if(currentCategory==='mobile'){
                     document.getElementById('addImei').value = c.imei || '';
-                    document.getElementById('addBill').value = c.bill || '';
+                    document.getElementById('addEmiAmount').value = c.emiAmount || '';
                     document.getElementById('addGuarantor').value = c.guarantor || '';
                 }
                 if(currentCategory==='gold'){
@@ -480,7 +569,6 @@
                     document.getElementById('addExpiryDate').value = c.expiryDate || '';
                 }
             } else {
-                // Reset all
                 document.querySelectorAll('#addModal input').forEach(input => input.value = '');
                 document.getElementById('addStartDate').valueAsDate = new Date();
                 document.getElementById('addPurity').value = '22K';
@@ -504,10 +592,9 @@
 
             let itemData = { name, phone, startDate, detail, totalAmount, advance };
 
-            // Grab specific fields
             if(currentCategory==='mobile'){
                 itemData.imei = document.getElementById('addImei').value;
-                itemData.bill = document.getElementById('addBill').value;
+                itemData.emiAmount = parseInt(document.getElementById('addEmiAmount').value) || 0;
                 itemData.guarantor = document.getElementById('addGuarantor').value;
             }
             if(currentCategory==='gold'){
@@ -525,11 +612,12 @@
 
             if(id) {
                 let item = db[currentCategory].find(i => i.id == id);
-                Object.assign(item, itemData); // Merge updates
+                Object.assign(item, itemData); 
             } else {
                 itemData.id = Date.now();
                 itemData.transactions = [];
-                itemData.noteText = ""; // Initialize empty note
+                itemData.noteText = ""; 
+                itemData.imgSrc = null;
                 db[currentCategory].unshift(itemData);
             }
             
@@ -550,12 +638,21 @@
             noteEl.value = currentActiveItem.noteText || '';
             document.getElementById('print-note-container').setAttribute('data-print-note', currentActiveItem.noteText || 'No remarks.');
 
+            // Image Thumbnail Handling for Gold
+            const imgContainer = document.getElementById('l-gold-img-container');
+            if(currentCategory === 'gold' && currentActiveItem.imgSrc) {
+                document.getElementById('l-gold-img').src = currentActiveItem.imgSrc;
+                imgContainer.style.display = 'block';
+            } else {
+                imgContainer.style.display = 'none';
+            }
+
             // Dynamic Info row
             const dynRow = document.getElementById('row-dynamic-info');
             dynRow.style.display = 'none';
-            if(currentCategory === 'mobile' && (currentActiveItem.imei || currentActiveItem.guarantor)) {
+            if(currentCategory === 'mobile' && (currentActiveItem.imei || currentActiveItem.emiAmount)) {
                 dynRow.style.display = 'flex';
-                dynRow.innerHTML = `<span>IMEI: ${currentActiveItem.imei||'N/A'}</span> <span>Gawah: ${currentActiveItem.guarantor||'N/A'}</span>`;
+                dynRow.innerHTML = `<span>IMEI: ${currentActiveItem.imei||'N/A'}</span> <span style="color:var(--danger)">EMI: ₹${currentActiveItem.emiAmount||0}/mo</span>`;
             }
             if(currentCategory === 'gold') {
                 dynRow.style.display = 'flex';
@@ -567,16 +664,14 @@
                 document.getElementById('l-extra').innerText = (currentActiveItem.advance || 0).toLocaleString('en-IN');
             }
 
-            // Expiry Row for Library
+            // Expiry/Due Date Row
             const expRow = document.getElementById('row-expiry');
-            if(currentCategory === 'library' && currentActiveItem.expiryDate) {
+            if((currentCategory === 'library' || currentCategory === 'mobile') && currentActiveItem.expiryDate) {
                 expRow.style.display = 'flex';
                 document.getElementById('l-expiry-date').innerText = formatDate(currentActiveItem.expiryDate);
             } else { expRow.style.display = 'none'; }
 
-            // Default Tx Type
             document.getElementById('newType').value = 'payment';
-
             document.getElementById('newDate').valueAsDate = new Date();
             updateLedgerTable();
             document.getElementById('ledgerModal').classList.add('active');
@@ -588,7 +683,15 @@
                 const noteVal = document.getElementById('l-persistent-note').value;
                 currentActiveItem.noteText = noteVal;
                 document.getElementById('print-note-container').setAttribute('data-print-note', noteVal || 'No remarks.');
-                saveData(); // Auto save to localStorage
+                saveData(); 
+            }
+        }
+
+        function clearLedgerHistory() {
+            if(confirm("Dhyan Dein! Kya aap is customer ki saari payment history delete karna chahte hain? (Customer delete nahi hoga)")) {
+                currentActiveItem.transactions = [];
+                saveData();
+                updateLedgerTable();
             }
         }
 
@@ -647,7 +750,7 @@
                             (t.type === 'penalty' ? '<span class="text-danger">⚠️ Penalty</span>' : '<span class="text-success">✓ Prin.</span>');
                 
                 let amountClass = t.type === 'penalty' ? 'text-danger' : (t.type === 'interest' ? 'text-warning' : 'text-success');
-                let amountSign = t.type === 'penalty' ? '-' : '+'; // logical visual indicator
+                let amountSign = t.type === 'penalty' ? '-' : '+'; 
 
                 tbody.innerHTML += `
                     <tr>
