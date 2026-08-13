@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Daily Earning & Expense Tracker - Cloud</title>
+    <title>Daily Earning, Expense & Udhar Tracker - Cloud</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <!-- FIREBASE CLOUD DATABASE LINKS -->
@@ -28,12 +28,12 @@
 
         .container { max-width: 900px; margin: 0 auto; padding: 15px; }
 
-        /* Summary Cards */
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        /* Summary Cards - Updated to 2x2 Grid for 4 items */
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .summary-card { background: var(--card-bg); padding: 15px 10px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .summary-card h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
         .summary-card .amt { font-size: 18px; font-weight: bold; }
-        .text-success { color: var(--success); } .text-danger { color: var(--danger); } .text-primary { color: var(--primary); }
+        .text-success { color: var(--success); } .text-danger { color: var(--danger); } .text-primary { color: var(--primary); } .text-warning { color: var(--warning); }
 
         /* Filter Section */
         .filter-section { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -44,16 +44,19 @@
         .date-picker-container { display: flex; align-items: center; gap: 10px; }
         .date-picker-container input[type="date"] { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
 
-        /* Tabs */
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: var(--card-bg); font-weight: 600; font-size: 15px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        /* Tabs - Updated for 3 tabs */
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex: 1; min-width: 100px; padding: 12px 8px; border: none; border-radius: 10px; background: var(--card-bg); font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .tab-btn.active.income { background: var(--success); color: white; }
         .tab-btn.active.expense { background: var(--danger); color: white; }
+        .tab-btn.active.udhar { background: var(--warning); color: white; }
 
         /* Category Rows */
         .category-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
         .cat-row { background: var(--card-bg); padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 8px; border-left: 4px solid var(--success); }
         .cat-row.expense-row { border-left-color: var(--danger); }
+        .cat-row.udhar-row { border-left-color: var(--warning); }
         
         .cat-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 15px; }
         .cat-actions button { background: none; border: none; cursor: pointer; padding: 5px; font-size: 14px; color: var(--text-muted); }
@@ -106,7 +109,7 @@
             </div>
         </div>
 
-        <!-- Summary Cards -->
+        <!-- Summary Cards (4 Items Grid) -->
         <div class="summary-grid">
             <div class="summary-card">
                 <h4>Income</h4>
@@ -117,15 +120,20 @@
                 <div class="amt text-danger" id="sumExpense">₹0</div>
             </div>
             <div class="summary-card">
-                <h4>Balance</h4>
+                <h4>Total Udhar</h4>
+                <div class="amt text-warning" id="sumUdhar">₹0</div>
+            </div>
+            <div class="summary-card">
+                <h4>Cash Balance</h4>
                 <div class="amt text-primary" id="sumBalance">₹0</div>
             </div>
         </div>
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab-btn active income" id="tabIncome" onclick="switchTab('income')">Earnings (Kamai)</button>
-            <button class="tab-btn expense" id="tabExpense" onclick="switchTab('expense')">Expenses (Kharcha)</button>
+            <button class="tab-btn active income" id="tabIncome" onclick="switchTab('income')">Earnings</button>
+            <button class="tab-btn expense" id="tabExpense" onclick="switchTab('expense')">Expenses</button>
+            <button class="tab-btn udhar" id="tabUdhar" onclick="switchTab('udhar')">Udhar</button>
         </div>
 
         <!-- Dynamic Category Rows -->
@@ -167,7 +175,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyC0hd47zuyx8JbtFRxEB25Cj-CfZSFSSBU",
             authDomain: "allhisab-1dbb2.firebaseapp.com",
-            databaseURL: "https://allhisab-1dbb2-default-rtdb.firebaseio.com", 
+            databaseURL: "https://allhisab-1dbb2-default-rtdb.asia-southeast1.firebasedatabase.app", 
             projectId: "allhisab-1dbb2",
             storageBucket: "allhisab-1dbb2.firebasestorage.app",
             messagingSenderId: "724063175679",
@@ -179,7 +187,7 @@
         const database = firebase.database();
 
         let db = {
-            categories: { income: [], expense: [] },
+            categories: { income: [], expense: [], udhar: [] },
             transactions: []
         };
 
@@ -197,17 +205,19 @@
                     db = {
                         categories: {
                             income: ['AEPS Commission', 'Gold Loan Byaj', 'Emitra Form', 'Money Transfer'],
-                            expense: ['Chai / Snacks', 'Shop Rent', 'Electricity Bill', 'Stationery']
+                            expense: ['Chai / Snacks', 'Shop Rent', 'Electricity Bill'],
+                            udhar: ['Customer Udhar', 'Supplier Udhar']
                         },
                         transactions: []
                     };
                 }
                 
-                // Ensure arrays exist
+                // Ensure arrays exist to prevent errors
                 if (!db.transactions) db.transactions = [];
-                if (!db.categories) db.categories = { income: [], expense: [] };
+                if (!db.categories) db.categories = { income: [], expense: [], udhar: [] };
                 if (!db.categories.income) db.categories.income = [];
                 if (!db.categories.expense) db.categories.expense = [];
+                if (!db.categories.udhar) db.categories.udhar = [];
 
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
@@ -215,7 +225,9 @@
                 renderCategories();
                 renderHistoryAndTotals();
             }, (error) => {
-                alert("Database Connection Error: " + error.message);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                alert("Firebase Connection Error: " + error.message);
             });
         }
 
@@ -253,9 +265,11 @@
             currentTab = tab;
             document.getElementById('tabIncome').classList.remove('active', 'income');
             document.getElementById('tabExpense').classList.remove('active', 'expense');
+            document.getElementById('tabUdhar').classList.remove('active', 'udhar');
             
             if(tab === 'income') document.getElementById('tabIncome').classList.add('active', 'income');
             if(tab === 'expense') document.getElementById('tabExpense').classList.add('active', 'expense');
+            if(tab === 'udhar') document.getElementById('tabUdhar').classList.add('active', 'udhar');
             
             renderCategories();
         }
@@ -265,7 +279,10 @@
             const container = document.getElementById('categoryList');
             container.innerHTML = '';
             const cats = db.categories[currentTab];
-            const rowClass = currentTab === 'income' ? '' : 'expense-row';
+            
+            let rowClass = '';
+            if(currentTab === 'expense') rowClass = 'expense-row';
+            if(currentTab === 'udhar') rowClass = 'udhar-row';
 
             cats.forEach((cat, index) => {
                 const safeId = "cat_" + index;
@@ -280,7 +297,7 @@
                         </div>
                         <div class="cat-inputs">
                             <input type="number" id="amt_${safeId}" placeholder="Amount (₹)" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
-                            <input type="text" id="note_${safeId}" placeholder="Note (Optional)" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
+                            <input type="text" id="note_${safeId}" placeholder="${currentTab === 'udhar' ? 'Customer Name / Note' : 'Note (Optional)'}" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
                             <button class="btn-save-entry" onclick="saveEntry('${safeId}', '${cat.replace(/'/g, "\\'")}')"><i class="fas fa-paper-plane"></i></button>
                         </div>
                     </div>
@@ -289,7 +306,7 @@
         }
 
         function addNewCategory() {
-            let catName = prompt(`Enter new ${currentTab === 'income' ? 'Earning' : 'Expense'} category name:`);
+            let catName = prompt(`Enter new ${currentTab} category name:`);
             if(catName && catName.trim() !== '') {
                 db.categories[currentTab].push(catName.trim());
                 saveData(); 
@@ -372,7 +389,7 @@
             let filterDate = document.getElementById('filterDate').value;
             let monthStr = getMonthString();
 
-            let totalInc = 0; let totalExp = 0;
+            let totalInc = 0; let totalExp = 0; let totalUdhar = 0;
             let displayData = [];
 
             if(currentFilter === 'month') {
@@ -388,9 +405,13 @@
             displayData.forEach(t => {
                 if(t.type === 'income') totalInc += t.amount;
                 if(t.type === 'expense') totalExp += t.amount;
+                if(t.type === 'udhar') totalUdhar += t.amount;
 
-                let colorClass = t.type === 'income' ? 'text-success' : 'text-danger';
-                let sign = t.type === 'income' ? '+' : '-';
+                let colorClass = '';
+                let sign = '';
+                if(t.type === 'income') { colorClass = 'text-success'; sign = '+'; }
+                if(t.type === 'expense') { colorClass = 'text-danger'; sign = '-'; }
+                if(t.type === 'udhar') { colorClass = 'text-warning'; sign = '⏳'; }
 
                 tbody.innerHTML += `
                     <tr>
@@ -411,6 +432,9 @@
 
             document.getElementById('sumIncome').innerText = `₹${totalInc.toLocaleString('en-IN')}`;
             document.getElementById('sumExpense').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
+            document.getElementById('sumUdhar').innerText = `₹${totalUdhar.toLocaleString('en-IN')}`;
+            
+            // Balance = Income - Expense (Udhar is tracked separately)
             let balance = totalInc - totalExp;
             document.getElementById('sumBalance').innerText = `₹${balance.toLocaleString('en-IN')}`;
             document.getElementById('sumBalance').className = `amt ${balance >= 0 ? 'text-primary' : 'text-danger'}`;
