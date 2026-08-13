@@ -28,7 +28,7 @@
 
         .container { max-width: 900px; margin: 0 auto; padding: 15px; }
 
-        /* Summary Cards - Updated to 2x2 Grid for 4 items */
+        /* Summary Cards */
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .summary-card { background: var(--card-bg); padding: 15px 10px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .summary-card h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
@@ -44,13 +44,18 @@
         .date-picker-container { display: flex; align-items: center; gap: 10px; }
         .date-picker-container input[type="date"] { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
 
-        /* Tabs - Updated for 3 tabs */
+        /* Tabs */
         .tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
         .tabs::-webkit-scrollbar { display: none; }
         .tab-btn { flex: 1; min-width: 100px; padding: 12px 8px; border: none; border-radius: 10px; background: var(--card-bg); font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .tab-btn.active.income { background: var(--success); color: white; }
         .tab-btn.active.expense { background: var(--danger); color: white; }
         .tab-btn.active.udhar { background: var(--warning); color: white; }
+
+        /* Category Search Bar */
+        .cat-search-box { display: flex; background: var(--card-bg); border-radius: 10px; padding: 0 15px; align-items: center; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .cat-search-box input { border: none; outline: none; width: 100%; padding: 12px 10px; font-size: 14px; background: transparent; }
+        .cat-search-box i { color: var(--text-muted); }
 
         /* Category Rows */
         .category-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
@@ -90,7 +95,7 @@
     <header>
         <button class="btn-back" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Back</button>
         <div><i class="fas fa-chart-line"></i> Daily Hisab</div>
-        <div style="width: 70px;"></div> <!-- UI Balance -->
+        <div style="width: 70px;"></div>
     </header>
 
     <div id="loader">Syncing from Cloud... Please wait</div>
@@ -134,6 +139,12 @@
             <button class="tab-btn active income" id="tabIncome" onclick="switchTab('income')">Earnings</button>
             <button class="tab-btn expense" id="tabExpense" onclick="switchTab('expense')">Expenses</button>
             <button class="tab-btn udhar" id="tabUdhar" onclick="switchTab('udhar')">Udhar</button>
+        </div>
+
+        <!-- Category Search Box -->
+        <div class="cat-search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="catSearchInput" placeholder="Search Earnings..." onkeyup="renderCategories()">
         </div>
 
         <!-- Dynamic Category Rows -->
@@ -196,12 +207,19 @@
 
         // --- FETCH DATA FROM CLOUD ---
         function loadDataFromFirebase() {
+            setTimeout(() => {
+                if(document.getElementById('loader').style.display !== 'none') {
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('app-content').style.display = 'block';
+                    alert("Internet slow hai. Offline mode on.");
+                }
+            }, 5000);
+
             database.ref('dailyTrackerData').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     db = data;
                 } else {
-                    // Default values if cloud is empty
                     db = {
                         categories: {
                             income: ['AEPS Commission', 'Gold Loan Byaj', 'Emitra Form', 'Money Transfer'],
@@ -212,7 +230,6 @@
                     };
                 }
                 
-                // Ensure arrays exist to prevent errors
                 if (!db.transactions) db.transactions = [];
                 if (!db.categories) db.categories = { income: [], expense: [], udhar: [] };
                 if (!db.categories.income) db.categories.income = [];
@@ -267,42 +284,62 @@
             document.getElementById('tabExpense').classList.remove('active', 'expense');
             document.getElementById('tabUdhar').classList.remove('active', 'udhar');
             
-            if(tab === 'income') document.getElementById('tabIncome').classList.add('active', 'income');
-            if(tab === 'expense') document.getElementById('tabExpense').classList.add('active', 'expense');
-            if(tab === 'udhar') document.getElementById('tabUdhar').classList.add('active', 'udhar');
+            let searchInput = document.getElementById('catSearchInput');
+            searchInput.value = ''; // Tab change hone par search khali ho jaye
+
+            if(tab === 'income') {
+                document.getElementById('tabIncome').classList.add('active', 'income');
+                searchInput.placeholder = "Search Earnings...";
+            }
+            if(tab === 'expense') {
+                document.getElementById('tabExpense').classList.add('active', 'expense');
+                searchInput.placeholder = "Search Expenses...";
+            }
+            if(tab === 'udhar') {
+                document.getElementById('tabUdhar').classList.add('active', 'udhar');
+                searchInput.placeholder = "Search Udhar...";
+            }
             
             renderCategories();
         }
 
-        // --- CATEGORY LOGIC ---
+        // --- CATEGORY LOGIC WITH SEARCH ---
         function renderCategories() {
             const container = document.getElementById('categoryList');
             container.innerHTML = '';
             const cats = db.categories[currentTab];
+            const searchQuery = document.getElementById('catSearchInput').value.toLowerCase();
             
             let rowClass = '';
             if(currentTab === 'expense') rowClass = 'expense-row';
             if(currentTab === 'udhar') rowClass = 'udhar-row';
 
             cats.forEach((cat, index) => {
-                const safeId = "cat_" + index;
-                container.innerHTML += `
-                    <div class="cat-row ${rowClass}">
-                        <div class="cat-header">
-                            <span>${cat}</span>
-                            <div class="cat-actions">
-                                <button class="edit" onclick="editCategory(${index})"><i class="fas fa-pen"></i></button>
-                                <button class="delete" onclick="deleteCategory(${index})"><i class="fas fa-trash"></i></button>
+                // Search filter check
+                if(cat.toLowerCase().includes(searchQuery)) {
+                    const safeId = "cat_" + index;
+                    container.innerHTML += `
+                        <div class="cat-row ${rowClass}">
+                            <div class="cat-header">
+                                <span>${cat}</span>
+                                <div class="cat-actions">
+                                    <button class="edit" onclick="editCategory(${index})"><i class="fas fa-pen"></i></button>
+                                    <button class="delete" onclick="deleteCategory(${index})"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="cat-inputs">
+                                <input type="number" id="amt_${safeId}" placeholder="Amount (₹)" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
+                                <input type="text" id="note_${safeId}" placeholder="${currentTab === 'udhar' ? 'Customer Name / Note' : 'Note (Optional)'}" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
+                                <button class="btn-save-entry" onclick="saveEntry('${safeId}', '${cat.replace(/'/g, "\\'")}')"><i class="fas fa-paper-plane"></i></button>
                             </div>
                         </div>
-                        <div class="cat-inputs">
-                            <input type="number" id="amt_${safeId}" placeholder="Amount (₹)" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
-                            <input type="text" id="note_${safeId}" placeholder="${currentTab === 'udhar' ? 'Customer Name / Note' : 'Note (Optional)'}" onkeypress="handleEnter(event, '${safeId}', '${cat.replace(/'/g, "\\'")}')">
-                            <button class="btn-save-entry" onclick="saveEntry('${safeId}', '${cat.replace(/'/g, "\\'")}')"><i class="fas fa-paper-plane"></i></button>
-                        </div>
-                    </div>
-                `;
+                    `;
+                }
             });
+
+            if(container.innerHTML === '') {
+                container.innerHTML = `<div style="text-align:center; padding:15px; color:var(--text-muted);">No matching category found.</div>`;
+            }
         }
 
         function addNewCategory() {
@@ -364,7 +401,7 @@
             };
 
             db.transactions.unshift(newEntry);
-            saveData(); // Sends to cloud
+            saveData(); 
 
             amtInput.value = ''; noteInput.value = '';
             amtInput.focus();
@@ -434,13 +471,11 @@
             document.getElementById('sumExpense').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
             document.getElementById('sumUdhar').innerText = `₹${totalUdhar.toLocaleString('en-IN')}`;
             
-            // Balance = Income - Expense (Udhar is tracked separately)
             let balance = totalInc - totalExp;
             document.getElementById('sumBalance').innerText = `₹${balance.toLocaleString('en-IN')}`;
             document.getElementById('sumBalance').className = `amt ${balance >= 0 ? 'text-primary' : 'text-danger'}`;
         }
 
-        // Initialize Firebase on load
         window.onload = () => {
             if(localStorage.getItem('all_hisab_auth') === 'secure') {
                 loadDataFromFirebase();
