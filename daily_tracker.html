@@ -141,10 +141,10 @@
             <button class="tab-btn udhar" id="tabUdhar" onclick="switchTab('udhar')">Udhar</button>
         </div>
 
-        <!-- Category Search Box -->
+        <!-- Category & History Search Box (THE NEW SMART SEARCH) -->
         <div class="cat-search-box">
             <i class="fas fa-search"></i>
-            <input type="text" id="catSearchInput" placeholder="Search Earnings..." onkeyup="renderCategories()">
+            <input type="text" id="catSearchInput" placeholder="Search Earnings (Name or Note)..." onkeyup="handleSearch()">
         </div>
 
         <!-- Dynamic Category Rows -->
@@ -239,8 +239,7 @@
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
 
-                renderCategories();
-                renderHistoryAndTotals();
+                handleSearch(); // Automatically renders both Categories and History
             }, (error) => {
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
@@ -274,7 +273,8 @@
             if(type === 'today') document.getElementById('filterDate').value = getTodayDate();
             if(type === 'yesterday') document.getElementById('filterDate').value = getYesterdayDate();
             
-            renderHistoryAndTotals();
+            document.getElementById('catSearchInput').value = ''; // Nayi date select karne par search clear karein
+            handleSearch();
         }
 
         // --- TAB LOGIC ---
@@ -289,21 +289,27 @@
 
             if(tab === 'income') {
                 document.getElementById('tabIncome').classList.add('active', 'income');
-                searchInput.placeholder = "Search Earnings...";
+                searchInput.placeholder = "Search Earnings (Name or Note)...";
             }
             if(tab === 'expense') {
                 document.getElementById('tabExpense').classList.add('active', 'expense');
-                searchInput.placeholder = "Search Expenses...";
+                searchInput.placeholder = "Search Expenses (Name or Note)...";
             }
             if(tab === 'udhar') {
                 document.getElementById('tabUdhar').classList.add('active', 'udhar');
-                searchInput.placeholder = "Search Udhar...";
+                searchInput.placeholder = "Search Udhar (Name or Note)...";
             }
             
-            renderCategories();
+            handleSearch(); // Dono ko update karega
         }
 
-        // --- CATEGORY LOGIC WITH SEARCH ---
+        // --- MASTER SEARCH HANDLER ---
+        function handleSearch() {
+            renderCategories();
+            renderHistoryAndTotals();
+        }
+
+        // --- CATEGORY RENDER LOGIC ---
         function renderCategories() {
             const container = document.getElementById('categoryList');
             container.innerHTML = '';
@@ -315,7 +321,6 @@
             if(currentTab === 'udhar') rowClass = 'udhar-row';
 
             cats.forEach((cat, index) => {
-                // Search filter check
                 if(cat.toLowerCase().includes(searchQuery)) {
                     const safeId = "cat_" + index;
                     container.innerHTML += `
@@ -419,27 +424,42 @@
             const [y, m, d] = dateStr.split('-'); return `${d}-${m}-${y}`;
         }
 
+        // --- ADVANCED HISTORY & REPORTING ---
         function renderHistoryAndTotals() {
             const tbody = document.getElementById('historyBody');
             tbody.innerHTML = '';
 
             let filterDate = document.getElementById('filterDate').value;
             let monthStr = getMonthString();
+            let searchQuery = document.getElementById('catSearchInput').value.toLowerCase();
 
             let totalInc = 0; let totalExp = 0; let totalUdhar = 0;
             let displayData = [];
 
-            if(currentFilter === 'month') {
-                displayData = db.transactions.filter(t => t.date.startsWith(monthStr));
-                document.getElementById('historyTitle').innerText = `Entries for This Month`;
+            if (searchQuery) {
+                // AGAR SEARCH KIYA HAI: Toh Date filter ignore karo aur poore database mein se dhoondho (Sirf active tab ke liye)
+                displayData = db.transactions.filter(t => {
+                    let textMatch = t.category.toLowerCase().includes(searchQuery) || (t.note && t.note.toLowerCase().includes(searchQuery));
+                    let tabMatch = (t.type === currentTab);
+                    return textMatch && tabMatch;
+                });
+                document.getElementById('historyTitle').innerText = `Search Results for "${searchQuery}"`;
             } else {
-                displayData = db.transactions.filter(t => t.date === filterDate);
-                document.getElementById('historyTitle').innerText = `Entries for ${formatDate(filterDate)}`;
+                // NORMAL MODE: Date ke hisaab se filter karo
+                if(currentFilter === 'month') {
+                    displayData = db.transactions.filter(t => t.date.startsWith(monthStr));
+                    document.getElementById('historyTitle').innerText = `Entries for This Month`;
+                } else {
+                    displayData = db.transactions.filter(t => t.date === filterDate);
+                    document.getElementById('historyTitle').innerText = `Entries for ${formatDate(filterDate)}`;
+                }
             }
 
-            displayData.sort((a,b) => b.id - a.id);
+            // Nayi entry sabse upar dikhe
+            displayData.sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
 
             displayData.forEach(t => {
+                // Calculate Total for the UI Dashboard
                 if(t.type === 'income') totalInc += t.amount;
                 if(t.type === 'expense') totalExp += t.amount;
                 if(t.type === 'udhar') totalUdhar += t.amount;
@@ -464,9 +484,10 @@
             });
 
             if(displayData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No entries found for this period.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No matching entries found.</td></tr>`;
             }
 
+            // Update Summary Cards (If searching, it will show sum of ONLY the search results)
             document.getElementById('sumIncome').innerText = `₹${totalInc.toLocaleString('en-IN')}`;
             document.getElementById('sumExpense').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
             document.getElementById('sumUdhar').innerText = `₹${totalUdhar.toLocaleString('en-IN')}`;
